@@ -1,0 +1,72 @@
+import json
+import time
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.wait import WebDriverWait
+
+# Function to parse the table data from JSON text
+def parse_json_table(json_text):
+    table = []
+    lines = json_text.split('\n')
+    headers = lines[1].split()  # Assuming the second line contains headers
+    for line in lines[2:]:
+        if line.strip():  # Skip empty lines
+            data = line.split()
+            data_dict = {headers[i]: int(data[i]) if headers[i] == 'age' else data[i] for i in range(len(headers))}
+            table.append(data_dict)
+    return table
+
+driver = webdriver.Chrome()
+
+# Navigate to the test page
+driver.get("https://testpages.herokuapp.com/styled/tag/dynamic-table.html")
+driver.maximize_window()
+time.sleep(3)
+
+# Click on the table data element
+driver.find_element(By.XPATH, "//summary[normalize-space()='Table Data']").click()
+time.sleep(3)
+
+# Clear the input box element
+input_box = driver.find_element(By.XPATH, "//textarea[@id='jsondata']")
+input_box.clear()
+json_data = [
+    {"name": "Moo", "age": 20},
+    {"name": "Sunny", "age": 42}
+    # Add more data as needed
+]
+
+# json_data_1 = [
+#     {"name": "Bob", "age": 20},
+#     {"name": "George", "age": 42},
+#     {"name": "edwin", "age": 52}
+# ]
+
+json_string = json.dumps(json_data, indent=4)
+print(json_string)
+time.sleep(3)
+
+# Click on the input box element and enter input
+driver.find_element(By.XPATH, "//textarea[@id='jsondata']").send_keys(json_string)
+time.sleep(3)
+
+# Click on Refresh
+driver.find_element(By.XPATH, "//button[@id='refreshtable']").click()
+wait = WebDriverWait(driver, 10)
+
+# Locate the Dynamic table
+dynamic_table = driver.find_element(By.XPATH, "//*[@id='dynamictable']")
+
+# Capture JSON text
+json_element = driver.find_element(By.ID, "tablehere")
+json_text = json_element.text
+
+# Parse the JSON table from the captured text
+parsed_json_data = parse_json_table(json_text)
+
+# Assert that the parsed JSON data matches the expected JSON data
+assert parsed_json_data == json_data, "JSON data does not match expected data"
+
+
+# Close the browser
+driver.quit()
